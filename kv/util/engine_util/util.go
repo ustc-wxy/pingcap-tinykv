@@ -5,6 +5,7 @@ import (
 
 	"github.com/Connor1996/badger"
 	"github.com/golang/protobuf/proto"
+	"github.com/jmhodges/levigo"
 )
 
 func KeyWithCF(cf string, key []byte) []byte {
@@ -107,4 +108,28 @@ func ExceedEndKey(current, endKey []byte) bool {
 		return false
 	}
 	return bytes.Compare(current, endKey) >= 0
+}
+
+func LevelDBGetCF(db *levigo.DB, cf string, key []byte) (val []byte, err error) {
+	ro := levigo.NewReadOptions()
+	val, err = db.Get(ro, KeyWithCF(cf, key))
+	ro.Close()
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func LevelDBPutCF(db *levigo.DB, cf string, key []byte, val []byte) error {
+	wo := levigo.NewWriteOptions()
+	err := db.Put(wo, KeyWithCF(cf, key), val)
+	wo.Close()
+	return err
+}
+
+func LevelDBDeleteCF(db *levigo.DB, cf string, key []byte) error {
+	wo := levigo.NewWriteOptions()
+	err := db.Delete(wo, KeyWithCF(cf, key))
+	wo.Close()
+	return err
 }

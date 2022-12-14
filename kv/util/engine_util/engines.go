@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/Connor1996/badger"
+	"github.com/jmhodges/levigo"
 	"github.com/pingcap-incubator/tinykv/log"
 )
 
@@ -80,4 +81,22 @@ func CreateDB(path string, raft bool) *badger.DB {
 		log.Fatal(err)
 	}
 	return db
+}
+
+func CreateLevelDB(path string) *levigo.DB {
+	opts := levigo.NewOptions()
+	opts.SetCache(levigo.NewLRUCache(1 << 30))
+	opts.SetBlockRestartInterval(8)
+	opts.SetCreateIfMissing(true)
+	opts.SetCompression(levigo.NoCompression)
+	db, err := levigo.Open(path, opts)
+	opts.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+
+func CloseLevelDB(db *levigo.DB) {
+	db.Close()
 }

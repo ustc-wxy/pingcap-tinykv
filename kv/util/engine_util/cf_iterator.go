@@ -2,6 +2,7 @@ package engine_util
 
 import (
 	"github.com/Connor1996/badger"
+	"github.com/jmhodges/levigo"
 )
 
 type CFItem struct {
@@ -126,4 +127,79 @@ type DBItem interface {
 	// If nil is passed, or capacity of dst isn't sufficient, a new slice would be allocated and
 	// returned.
 	ValueCopy(dst []byte) ([]byte, error)
+}
+
+type LevelDBIterator struct {
+	iter      *levigo.Iterator
+	prefix    string
+	prefixlen int
+}
+
+func NewLevelDBIterator(cf string, db *levigo.DB) *LevelDBIterator {
+	prefix := cf + "_"
+	return &LevelDBIterator{
+		iter:      db.NewIterator(levigo.NewReadOptions()),
+		prefix:    prefix,
+		prefixlen: len(prefix),
+	}
+}
+
+func (i *LevelDBIterator) Value() []byte {
+	return i.iter.Value()
+}
+
+func (i *LevelDBIterator) Valid() bool {
+	return i.iter.Valid()
+}
+
+func (i *LevelDBIterator) Next() {
+	i.iter.Next()
+}
+
+func (i *LevelDBIterator) Prev() {
+	i.iter.Prev()
+}
+
+func (i *LevelDBIterator) Key() []byte {
+	return i.iter.Key()[i.prefixlen:]
+}
+
+func (i *LevelDBIterator) Seek(key []byte) {
+	i.iter.Seek(key)
+}
+
+func (i *LevelDBIterator) SeekToFirst() {
+	i.iter.SeekToFirst()
+}
+
+func (i *LevelDBIterator) SeekToLast() {
+	i.iter.SeekToLast()
+}
+
+func (i *LevelDBIterator) Error() {
+	i.iter.GetError()
+}
+
+func (i *LevelDBIterator) Close() {
+	i.iter.Close()
+}
+
+type DBIter interface {
+	// Key returns the value of iter.
+	Key() []byte
+	// Value returns the value of iter.
+	Value() []byte
+	// Valid returns false when iteration is done.
+	Valid() bool
+	// Prev moves the iterator to the previous sequential key in the database.
+	// Always check it.Valid() after a Next() to ensure you have access to a valid iter.
+	Prev()
+	// Next moves the iterator to the next sequential key in the database.
+	// Always check it.Valid() after a Next() to ensure you have access to a valid iter.
+	Next()
+	// Seek would seek to the provided key if present. If absent, it would seek to the next smallest key
+	// greater than provided.
+	Seek([]byte)
+	// Close the iterator
+	Close()
 }
